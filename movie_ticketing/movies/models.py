@@ -18,3 +18,6 @@ class Movie(BaseModel):
         verbose_name = _("Movie")
         verbose_name_plural = _("Movies")
         db_table = "movie"
+
+    def __str__(self):
+        return self.title
