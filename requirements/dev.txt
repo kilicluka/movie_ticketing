@@ -1,0 +1,2 @@
+-r common.txt
+pre-commit==2.19.*
