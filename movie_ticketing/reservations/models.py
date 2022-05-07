@@ -1,3 +1,5 @@
+from string import ascii_uppercase
+
 from core.models import BaseModel
 from django.conf import settings
 from django.db import models
@@ -54,11 +56,24 @@ class Seat(BaseModel):
         verbose_name=_("Hall"),
         help_text=_("Hall where the seat is located."),
     )
+    row_identifier = models.CharField(
+        choices=list(zip(ascii_uppercase, ascii_uppercase)),
+        max_length=1,
+        verbose_name=_("Row Identifier"),
+        help_text=_("Identifier of the row the seat belongs to."),
+    )
+    seat_identifier = models.CharField(
+        choices=list(zip(range(1, 100), (range(1, 100)))),
+        max_length=2,
+        verbose_name=_("Seat Identifier"),
+        help_text=_("Identifier of the seat in the row."),
+    )
 
     class Meta:
         verbose_name = _("Seat")
         verbose_name_plural = _("Seats")
         db_table = "seat"
+        unique_together = ("hall", "row_identifier", "seat_identifier")
 
 
 class ReservationSeat(BaseModel):
@@ -117,6 +132,11 @@ class Showtime(BaseModel):
 
 
 class Hall(BaseModel):
+    hall_number = models.SmallIntegerField(
+        verbose_name=_("Hall Number"),
+        help_text=_("Number of the movie hall."),
+    )
+
     class Meta:
         verbose_name = _("Hall")
         verbose_name_plural = _("Halls")
