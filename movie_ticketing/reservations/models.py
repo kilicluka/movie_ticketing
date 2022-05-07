@@ -47,6 +47,9 @@ class Reservation(BaseModel):
         verbose_name_plural = _("Reservations")
         db_table = "reservation"
 
+    def __str__(self):
+        return f"{self.user.email} - {self.showtime}"
+
 
 class Seat(BaseModel):
     hall = models.ForeignKey(
@@ -63,7 +66,7 @@ class Seat(BaseModel):
         help_text=_("Identifier of the row the seat belongs to."),
     )
     seat_identifier = models.CharField(
-        choices=list(zip(range(1, 100), (range(1, 100)))),
+        choices=list(map(lambda x: (str(x), str(x)), range(1, 100))),
         max_length=2,
         verbose_name=_("Seat Identifier"),
         help_text=_("Identifier of the seat in the row."),
@@ -74,6 +77,9 @@ class Seat(BaseModel):
         verbose_name_plural = _("Seats")
         db_table = "seat"
         unique_together = ("hall", "row_identifier", "seat_identifier")
+
+    def __str__(self):
+        return f"{str(self.hall)} - {self.row_identifier}{self.seat_identifier}"
 
 
 class ReservationSeat(BaseModel):
@@ -96,6 +102,9 @@ class ReservationSeat(BaseModel):
         verbose_name = _("Reservation Seat")
         verbose_name_plural = _("Reservation Seats")
         db_table = "reservation_seat"
+
+    def __str__(self):
+        return f"{self.reservation} - {self.seat}"
 
 
 class Showtime(BaseModel):
@@ -130,6 +139,12 @@ class Showtime(BaseModel):
         verbose_name_plural = _("Showtimes")
         db_table = "showtime"
 
+    def __str__(self):
+        return (
+            f"{self.movie} ({self.movie_format}) - "
+            f"{self.hall}: {self.time_showing.strftime(settings.DATETIME_FORMAT)}"
+        )
+
 
 class Hall(BaseModel):
     hall_number = models.SmallIntegerField(
@@ -141,3 +156,6 @@ class Hall(BaseModel):
         verbose_name = _("Hall")
         verbose_name_plural = _("Halls")
         db_table = "hall"
+
+    def __str__(self):
+        return f"H{self.hall_number}"

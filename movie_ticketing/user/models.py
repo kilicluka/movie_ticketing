@@ -27,3 +27,6 @@ class UserProfile(BaseModel, AbstractBaseUser, PermissionsMixin):
         verbose_name = _("User Profile")
         verbose_name_plural = _("User Profiles")
         db_table = "user_profile"
+
+    def __str__(self):
+        return self.email
