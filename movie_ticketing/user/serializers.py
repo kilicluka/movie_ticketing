@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import AccessToken
 
 from .models import UserProfile
 
@@ -28,3 +29,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password_repeated")
         return UserProfile.objects.create_user(**validated_data)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["access_token"] = str(AccessToken.for_user(instance))
+        return representation
