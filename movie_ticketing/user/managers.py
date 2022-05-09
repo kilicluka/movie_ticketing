@@ -6,7 +6,8 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email, **kwargs)
         user.set_password(password)
-        return user.save()
+        user.save()
+        return user
 
     def create_user(self, email, password):
         return self._create_user(email, password)
