@@ -9,6 +9,9 @@ from .choices import MovieFormat, ReservationStatus
 
 
 class Reservation(BaseModel):
+    MINUTES_BEFORE_MOVIE_DEADLINE = 30
+    MINUTES_BEFORE_EXPIRY = 15
+
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,
         related_name="reservations",
@@ -49,6 +52,9 @@ class Reservation(BaseModel):
 
     def __str__(self):
         return f"{self.user.email} - {self.showtime}"
+
+    def add_seat(self, seat):
+        return ReservationSeat.objects.create(reservation=self, seat=seat)
 
 
 class Seat(BaseModel):

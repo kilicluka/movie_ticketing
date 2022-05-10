@@ -1,16 +1,17 @@
+from core.admin import CoreAdminMixin
 from django.contrib import admin
 
 from .models import Hall, Reservation, ReservationSeat, Seat, Showtime
 
 
 @admin.register(Hall)
-class HallAdmin(admin.ModelAdmin):
+class HallAdmin(CoreAdminMixin, admin.ModelAdmin):
     list_display = ["hall_number", "created_at", "updated_at"]
     search_fields = ["hall_number"]
 
 
 @admin.register(Reservation)
-class ReservationAdmin(admin.ModelAdmin):
+class ReservationAdmin(CoreAdminMixin, admin.ModelAdmin):
     list_display = [
         "user",
         "showtime",
@@ -23,13 +24,13 @@ class ReservationAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReservationSeat)
-class ReservationSeatAdmin(admin.ModelAdmin):
+class ReservationSeatAdmin(CoreAdminMixin, admin.ModelAdmin):
     list_display = ["reservation", "seat", "created_at", "updated_at"]
     search_fields = ["reservation__user__email"]
 
 
 @admin.register(Seat)
-class SeatAdmin(admin.ModelAdmin):
+class SeatAdmin(CoreAdminMixin, admin.ModelAdmin):
     list_display = [
         "hall",
         "row_identifier",
@@ -41,7 +42,7 @@ class SeatAdmin(admin.ModelAdmin):
 
 
 @admin.register(Showtime)
-class ShowtimeAdmin(admin.ModelAdmin):
+class ShowtimeAdmin(CoreAdminMixin, admin.ModelAdmin):
     list_display = [
         "hall",
         "movie",
