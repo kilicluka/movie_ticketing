@@ -1,3 +1,0 @@
--r common.txt
-pre-commit==2.19.*
-django-extensions==3.1.*

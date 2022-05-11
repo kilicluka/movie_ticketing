@@ -1,3 +1,5 @@
 Django==3.2.*
 djangorestframework==3.13.*
 djangorestframework-simplejwt==5.1.*
+pre-commit==2.19.*
+django-extensions==3.1.*
