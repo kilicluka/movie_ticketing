@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.utils import timezone
+from movies.serializers import MovieSerializer
 from rest_framework import serializers
 
 from .choices import ReservationStatus
@@ -94,3 +95,12 @@ class SeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seat
         fields = ["uuid", "row_identifier", "seat_identifier"]
+
+
+class ShowtimesSerializer(serializers.ModelSerializer):
+    hall_uuid = serializers.UUIDField(source="hall.uuid")
+    movie = MovieSerializer()
+
+    class Meta:
+        model = Showtime
+        fields = ["uuid", "hall_uuid", "movie", "time_showing", "movie_format"]

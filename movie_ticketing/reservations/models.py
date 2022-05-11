@@ -6,6 +6,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from .choices import MovieFormat, ReservationStatus
+from .managers import ShowtimeManager
 
 
 class Reservation(BaseModel):
@@ -139,6 +140,8 @@ class Showtime(BaseModel):
         verbose_name=_("Movie Format"),
         help_text=_("Format in which the movie is showing."),
     )
+
+    objects = ShowtimeManager()
 
     class Meta:
         verbose_name = _("Showtime")
