@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 from movies.serializers import MovieSerializer
 from rest_framework import serializers
@@ -61,9 +62,7 @@ class ReservationsSerializer(serializers.ModelSerializer):
     def _get_seat_if_available(self, seat_uuid, showtime):
         try:
             seat = Seat.objects.get(uuid=seat_uuid, hall=showtime.hall)
-            if not ReservationSeat.objects.filter(
-                seat=seat, reservation__showtime=showtime
-            ).exists():
+            if seat.is_available_for_showtime(showtime):
                 return seat
             raise serializers.ValidationError(
                 {"seat_uuid": "That seat is not available."}
@@ -92,9 +91,11 @@ class ReservationsSerializer(serializers.ModelSerializer):
 
 
 class SeatSerializer(serializers.ModelSerializer):
+    is_available = serializers.BooleanField(required=False)
+
     class Meta:
         model = Seat
-        fields = ["uuid", "row_identifier", "seat_identifier"]
+        fields = ["uuid", "row_identifier", "seat_identifier", "is_available"]
 
 
 class HallSerializer(serializers.ModelSerializer):
@@ -115,8 +116,20 @@ class ShowtimesSerializer(serializers.ModelSerializer):
 class ShowtimeDetailSerializer(serializers.ModelSerializer):
     hall = HallSerializer()
     movie = MovieSerializer()
-    seats = SeatSerializer(source="hall.seats", many=True)
+    seats = serializers.SerializerMethodField()
 
     class Meta:
         model = Showtime
         fields = ["uuid", "movie", "time_showing", "movie_format", "hall", "seats"]
+
+    @staticmethod
+    def get_seats(showtime):
+        seats = Seat.objects.filter(hall=showtime.hall).annotate(
+            is_available=Exists(
+                queryset=ReservationSeat.objects.filter(
+                    seat__pk=OuterRef("pk"), reservation__showtime=showtime
+                ),
+                negated=True,
+            )
+        )
+        return SeatSerializer(seats, many=True).data

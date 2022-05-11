@@ -88,6 +88,11 @@ class Seat(BaseModel):
     def __str__(self):
         return f"{str(self.hall)} - {self.row_identifier}{self.seat_identifier}"
 
+    def is_available_for_showtime(self, showtime):
+        return not ReservationSeat.objects.filter(
+            seat=self, reservation__showtime=showtime
+        ).exists()
+
 
 class ReservationSeat(BaseModel):
     reservation = models.ForeignKey(

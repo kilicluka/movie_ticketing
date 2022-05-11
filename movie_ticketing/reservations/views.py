@@ -34,7 +34,7 @@ class ShowtimeDetailView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
     lookup_field = "uuid"
     queryset = (
-        Showtime.objects.all()
+        Showtime.objects.showing()
         .select_related("movie", "hall")
         .prefetch_related("hall__seats")
     )
