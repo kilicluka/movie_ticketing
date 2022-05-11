@@ -26,7 +26,7 @@ class ReservationsView(generics.ListCreateAPIView):
 class ShowtimesView(generics.ListAPIView):
     serializer_class = ShowtimesSerializer
     permission_classes = [AllowAny]
-    queryset = Showtime.objects.available().select_related("movie", "hall")
+    queryset = Showtime.objects.showing().select_related("movie", "hall")
 
 
 class ShowtimeDetailView(generics.RetrieveAPIView):
