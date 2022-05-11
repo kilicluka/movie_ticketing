@@ -32,5 +32,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation["access_token"] = str(AccessToken.for_user(instance))
+        representation["access"] = str(AccessToken.for_user(instance))
         return representation
