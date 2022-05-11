@@ -8,18 +8,18 @@ from .models import Reservation, ReservationSeat, Seat, Showtime
 
 
 class ReservationsSerializer(serializers.ModelSerializer):
-    seat = serializers.UUIDField(required=True)
-    showtime = serializers.UUIDField(required=True)
+    seat_uuid = serializers.UUIDField(required=True)
+    showtime_uuid = serializers.UUIDField(required=True)
 
     class Meta:
         model = Reservation
-        fields = ["user", "seat", "showtime"]
+        fields = ["user", "seat_uuid", "showtime_uuid"]
 
-    def validate_showtime(self, value):
+    def validate_showtime_uuid(self, value):
         try:
             showtime = Showtime.objects.get(uuid=value)
             if self._is_reservation_in_time(showtime):
-                return showtime
+                return value
             raise serializers.ValidationError(
                 {"non_field_error": "Reservation period has passed."}
             )
@@ -36,8 +36,11 @@ class ReservationsSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
+        attrs["showtime"] = Showtime.objects.get(uuid=attrs.pop("showtime_uuid"))
         self._check_open_reservation_does_not_exist(attrs["user"], attrs["showtime"])
-        attrs["seat"] = self._get_seat_if_available(attrs["seat"], attrs["showtime"])
+        attrs["seat"] = self._get_seat_if_available(
+            attrs.pop("seat_uuid"), attrs["showtime"]
+        )
         return attrs
 
     def _check_open_reservation_does_not_exist(self, user, showtime):
@@ -79,6 +82,15 @@ class ReservationsSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return {
-            "seat": str(instance.seats.first().uuid),
-            "showtime": str(instance.showtime.uuid),
+            "reservation_uuid": str(instance.uuid),
+            "showtime_uuid": str(instance.showtime.uuid),
+            "status": instance.status,
+            "expires_at": instance.expires_at,
+            "seats": [SeatSerializer(seat).data for seat in instance.seats.all()],
         }
+
+
+class SeatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Seat
+        fields = ["uuid", "row_identifier", "seat_identifier"]
