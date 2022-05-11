@@ -19,7 +19,7 @@ class ReservationsSerializer(serializers.ModelSerializer):
     def validate_showtime_uuid(self, value):
         try:
             showtime = Showtime.objects.get(uuid=value)
-            if self._is_reservation_in_time(showtime):
+            if self._is_reservation_on_time(showtime):
                 return value
             raise serializers.ValidationError(
                 {"non_field_error": "Reservation period has passed."}
@@ -29,7 +29,7 @@ class ReservationsSerializer(serializers.ModelSerializer):
                 {"showtime_uuid": "Showtime with the provided uuid does not exist."}
             )
 
-    def _is_reservation_in_time(self, showtime):
+    def _is_reservation_on_time(self, showtime):
         return (
             timezone.now()
             + timedelta(minutes=Reservation.MINUTES_BEFORE_MOVIE_DEADLINE)
