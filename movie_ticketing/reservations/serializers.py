@@ -5,7 +5,7 @@ from movies.serializers import MovieSerializer
 from rest_framework import serializers
 
 from .choices import ReservationStatus
-from .models import Reservation, ReservationSeat, Seat, Showtime
+from .models import Hall, Reservation, ReservationSeat, Seat, Showtime
 
 
 class ReservationsSerializer(serializers.ModelSerializer):
@@ -97,6 +97,12 @@ class SeatSerializer(serializers.ModelSerializer):
         fields = ["uuid", "row_identifier", "seat_identifier"]
 
 
+class HallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hall
+        fields = ["uuid", "hall_number"]
+
+
 class ShowtimesSerializer(serializers.ModelSerializer):
     hall_uuid = serializers.UUIDField(source="hall.uuid")
     movie = MovieSerializer()
@@ -104,3 +110,13 @@ class ShowtimesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Showtime
         fields = ["uuid", "hall_uuid", "movie", "time_showing", "movie_format"]
+
+
+class ShowtimeDetailSerializer(serializers.ModelSerializer):
+    hall = HallSerializer()
+    movie = MovieSerializer()
+    seats = SeatSerializer(source="hall.seats", many=True)
+
+    class Meta:
+        model = Showtime
+        fields = ["uuid", "movie", "time_showing", "movie_format", "hall", "seats"]

@@ -2,7 +2,11 @@ from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .models import Reservation, Showtime
-from .serializers import ReservationsSerializer, ShowtimesSerializer
+from .serializers import (
+    ReservationsSerializer,
+    ShowtimeDetailSerializer,
+    ShowtimesSerializer,
+)
 
 
 class ReservationsView(generics.ListCreateAPIView):
@@ -23,3 +27,14 @@ class ShowtimesView(generics.ListAPIView):
     serializer_class = ShowtimesSerializer
     permission_classes = [AllowAny]
     queryset = Showtime.objects.available().select_related("movie", "hall")
+
+
+class ShowtimeDetailView(generics.RetrieveAPIView):
+    serializer_class = ShowtimeDetailSerializer
+    permission_classes = [AllowAny]
+    lookup_field = "uuid"
+    queryset = (
+        Showtime.objects.all()
+        .select_related("movie", "hall")
+        .prefetch_related("hall__seats")
+    )
