@@ -1,0 +1,159 @@
+[
+{
+    "model": "movies.movie",
+    "pk": 1,
+    "fields": {
+        "uuid": "1f2c5234-232d-4923-a3b2-09f33b07ff2d",
+        "created_at": "2022-05-11T17:41:43.943Z",
+        "updated_at": "2022-05-11T17:41:43.943Z",
+        "title": "Spider-man 3",
+        "description": "The third spider-man movie."
+    }
+},
+{
+    "model": "movies.movie",
+    "pk": 2,
+    "fields": {
+        "uuid": "7d54967c-7f25-4c94-983c-0d7fc0c0b0b2",
+        "created_at": "2022-05-11T17:41:51.468Z",
+        "updated_at": "2022-05-11T17:41:51.468Z",
+        "title": "Hulk 2",
+        "description": "The second Hulk movie."
+    }
+},
+{
+    "model": "reservations.seat",
+    "pk": 1,
+    "fields": {
+        "uuid": "e767766c-db9a-4e89-8513-500dbc6a9a4f",
+        "created_at": "2022-05-11T17:42:08.488Z",
+        "updated_at": "2022-05-11T17:42:08.488Z",
+        "hall": 1,
+        "row_identifier": "A",
+        "seat_identifier": "1"
+    }
+},
+{
+    "model": "reservations.seat",
+    "pk": 2,
+    "fields": {
+        "uuid": "8cb9d0ca-e35c-4464-a841-6165c6ea5bf8",
+        "created_at": "2022-05-11T17:42:14.208Z",
+        "updated_at": "2022-05-11T17:42:17.951Z",
+        "hall": 1,
+        "row_identifier": "A",
+        "seat_identifier": "2"
+    }
+},
+{
+    "model": "reservations.seat",
+    "pk": 3,
+    "fields": {
+        "uuid": "88d9dfea-14a6-40e8-b074-4fffee22402b",
+        "created_at": "2022-05-11T17:42:27.650Z",
+        "updated_at": "2022-05-11T17:42:27.650Z",
+        "hall": 1,
+        "row_identifier": "A",
+        "seat_identifier": "3"
+    }
+},
+{
+    "model": "reservations.seat",
+    "pk": 4,
+    "fields": {
+        "uuid": "ec043501-2816-44d1-8379-4206de3887f2",
+        "created_at": "2022-05-11T17:42:31.875Z",
+        "updated_at": "2022-05-11T17:42:31.875Z",
+        "hall": 2,
+        "row_identifier": "A",
+        "seat_identifier": "1"
+    }
+},
+{
+    "model": "reservations.seat",
+    "pk": 5,
+    "fields": {
+        "uuid": "9d12f095-dccb-4639-ad2f-ac1c2ece1952",
+        "created_at": "2022-05-11T17:42:36.765Z",
+        "updated_at": "2022-05-11T17:42:36.765Z",
+        "hall": 2,
+        "row_identifier": "A",
+        "seat_identifier": "2"
+    }
+},
+{
+    "model": "reservations.showtime",
+    "pk": 1,
+    "fields": {
+        "uuid": "1dcf0330-4ffb-49a8-9ba4-8776422cf50a",
+        "created_at": "2022-05-11T17:43:24.321Z",
+        "updated_at": "2022-05-11T17:43:24.321Z",
+        "hall": 1,
+        "movie": 1,
+        "time_showing": "2022-06-10T18:00:00Z",
+        "movie_format": "2D"
+    }
+},
+{
+    "model": "reservations.showtime",
+    "pk": 2,
+    "fields": {
+        "uuid": "44ee03ec-823c-499f-834c-0667709404f3",
+        "created_at": "2022-05-11T17:43:37.392Z",
+        "updated_at": "2022-05-11T17:43:37.392Z",
+        "hall": 1,
+        "movie": 1,
+        "time_showing": "2022-06-11T20:00:00Z",
+        "movie_format": "3D"
+    }
+},
+{
+    "model": "reservations.showtime",
+    "pk": 3,
+    "fields": {
+        "uuid": "11b58d25-13a7-416b-9cec-3fa768312273",
+        "created_at": "2022-05-11T17:43:47.904Z",
+        "updated_at": "2022-05-11T17:43:47.904Z",
+        "hall": 2,
+        "movie": 2,
+        "time_showing": "2022-06-17T19:00:00Z",
+        "movie_format": "4DX"
+    }
+},
+{
+    "model": "reservations.hall",
+    "pk": 1,
+    "fields": {
+        "uuid": "11a08a8b-f6ff-433c-a7e9-b9846b1cba62",
+        "created_at": "2022-05-11T17:41:56.238Z",
+        "updated_at": "2022-05-11T17:41:56.238Z",
+        "hall_number": 1
+    }
+},
+{
+    "model": "reservations.hall",
+    "pk": 2,
+    "fields": {
+        "uuid": "5cefe20b-21f6-43b8-97a3-a7693db9ee94",
+        "created_at": "2022-05-11T17:41:58.778Z",
+        "updated_at": "2022-05-11T17:41:58.778Z",
+        "hall_number": 2
+    }
+},
+{
+    "model": "user.userprofile",
+    "pk": 1,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$DdToGdFNyjYo9fdnZxWR6t$iWxBbRu2DP6bYMqd7YhAvw80+XM3VH+lVQdQV1XRo4I=",
+        "last_login": "2022-05-11T17:41:12.825Z",
+        "is_superuser": true,
+        "uuid": "6e98ff03-bf71-462e-a1e8-e09d5906a8fa",
+        "created_at": "2022-05-11T17:40:38.367Z",
+        "updated_at": "2022-05-11T17:40:38.367Z",
+        "email": "superuser@gmail.com",
+        "is_staff": true,
+        "groups": [],
+        "user_permissions": []
+    }
+}
+]
