@@ -1,15 +1,48 @@
 from datetime import timedelta
 
-from django.db.models import Exists, OuterRef
 from django.utils import timezone
 from movies.serializers import MovieSerializer
 from rest_framework import serializers
 
 from .choices import ReservationStatus
-from .models import Hall, Reservation, ReservationSeat, Seat, Showtime
+from .models import Hall, Reservation, Seat, Showtime
 
 
-class ReservationsSerializer(serializers.ModelSerializer):
+class ReservationSerializerBase(serializers.ModelSerializer):
+    @staticmethod
+    def check_reservations_still_accepted(showtime):
+        if (
+            timezone.now()
+            + timedelta(minutes=Reservation.MINUTES_BEFORE_MOVIE_DEADLINE)
+            > showtime.time_showing
+        ):
+            raise serializers.ValidationError(
+                {"non_field_error": "Reservation period has passed."}
+            )
+
+    @staticmethod
+    def get_seat_if_available(seat_uuid, showtime):
+        try:
+            seat = Seat.objects.get(uuid=seat_uuid, hall=showtime.hall)
+            if seat.is_available_for_showtime(showtime):
+                return seat
+            raise serializers.ValidationError(
+                {"seat_uuid": "That seat is not available."}
+            )
+        except Seat.DoesNotExist:
+            raise serializers.ValidationError({"seat_uuid": "Invalid seat selected."})
+
+    def to_representation(self, instance):
+        return {
+            "uuid": str(instance.uuid),
+            "showtime": ShowtimesSerializer(instance.showtime).data,
+            "status": instance.status,
+            "expires_at": instance.expires_at,
+            "seats": [SeatSerializer(seat).data for seat in instance.seats.all()],
+        }
+
+
+class ReservationsSerializer(ReservationSerializerBase):
     seat_uuid = serializers.UUIDField(required=True)
     showtime_uuid = serializers.UUIDField(required=True)
 
@@ -20,32 +53,23 @@ class ReservationsSerializer(serializers.ModelSerializer):
     def validate_showtime_uuid(self, value):
         try:
             showtime = Showtime.objects.get(uuid=value)
-            if self._is_reservation_on_time(showtime):
-                return value
-            raise serializers.ValidationError(
-                {"non_field_error": "Reservation period has passed."}
-            )
+            self.check_reservations_still_accepted(showtime)
+            return value
         except Showtime.DoesNotExist:
             raise serializers.ValidationError(
                 {"showtime_uuid": "Showtime with the provided uuid does not exist."}
             )
 
-    def _is_reservation_on_time(self, showtime):
-        return (
-            timezone.now()
-            + timedelta(minutes=Reservation.MINUTES_BEFORE_MOVIE_DEADLINE)
-            <= showtime.time_showing
-        )
-
     def validate(self, attrs):
         attrs["showtime"] = Showtime.objects.get(uuid=attrs.pop("showtime_uuid"))
         self._check_open_reservation_does_not_exist(attrs["user"], attrs["showtime"])
-        attrs["seat"] = self._get_seat_if_available(
+        attrs["seat"] = self.get_seat_if_available(
             attrs.pop("seat_uuid"), attrs["showtime"]
         )
         return attrs
 
-    def _check_open_reservation_does_not_exist(self, user, showtime):
+    @staticmethod
+    def _check_open_reservation_does_not_exist(user, showtime):
         if Reservation.objects.filter(
             user=user,
             showtime=showtime,
@@ -59,17 +83,6 @@ class ReservationsSerializer(serializers.ModelSerializer):
                 }
             )
 
-    def _get_seat_if_available(self, seat_uuid, showtime):
-        try:
-            seat = Seat.objects.get(uuid=seat_uuid, hall=showtime.hall)
-            if seat.is_available_for_showtime(showtime):
-                return seat
-            raise serializers.ValidationError(
-                {"seat_uuid": "That seat is not available."}
-            )
-        except Seat.DoesNotExist:
-            raise serializers.ValidationError({"seat_uuid": "Invalid seat selected."})
-
     def create(self, validated_data):
         seat = validated_data.pop("seat")
         reservation = Reservation.objects.create(
@@ -80,14 +93,28 @@ class ReservationsSerializer(serializers.ModelSerializer):
         reservation.add_seat(seat)
         return reservation
 
-    def to_representation(self, instance):
-        return {
-            "reservation_uuid": str(instance.uuid),
-            "showtime_uuid": str(instance.showtime.uuid),
-            "status": instance.status,
-            "expires_at": instance.expires_at,
-            "seats": [SeatSerializer(seat).data for seat in instance.seats.all()],
-        }
+
+class ReservationSerializer(ReservationSerializerBase):
+    seat_uuid = serializers.UUIDField()
+
+    class Meta:
+        model = Reservation
+        fields = ["seat_uuid"]
+
+    def update(self, instance, validated_data):
+        if not validated_data.get("seat_uuid"):
+            raise serializers.ValidationError({"seat_uuid": "This field is required."})
+
+        self.check_reservations_still_accepted(instance.showtime)
+        if instance.status == ReservationStatus.COMPLETED:
+            raise serializers.ValidationError(
+                {"non_field_error": "Reservation is not OPEN."}
+            )
+        seat = self.get_seat_if_available(
+            validated_data["seat_uuid"], instance.showtime
+        )
+        instance.add_seat(seat)
+        return instance
 
 
 class SeatSerializer(serializers.ModelSerializer):
@@ -105,15 +132,15 @@ class HallSerializer(serializers.ModelSerializer):
 
 
 class ShowtimesSerializer(serializers.ModelSerializer):
-    hall_uuid = serializers.UUIDField(source="hall.uuid")
+    hall = HallSerializer()
     movie = MovieSerializer()
 
     class Meta:
         model = Showtime
-        fields = ["uuid", "hall_uuid", "movie", "time_showing", "movie_format"]
+        fields = ["uuid", "hall", "movie", "time_showing", "movie_format"]
 
 
-class ShowtimeDetailSerializer(serializers.ModelSerializer):
+class ShowtimeSerializer(serializers.ModelSerializer):
     hall = HallSerializer()
     movie = MovieSerializer()
     seats = serializers.SerializerMethodField()
@@ -124,12 +151,5 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_seats(showtime):
-        seats = Seat.objects.filter(hall=showtime.hall).annotate(
-            is_available=Exists(
-                queryset=ReservationSeat.objects.filter(
-                    seat__pk=OuterRef("pk"), reservation__showtime=showtime
-                ),
-                negated=True,
-            )
-        )
+        seats = Seat.objects.showtime_seats(showtime)
         return SeatSerializer(seats, many=True).data

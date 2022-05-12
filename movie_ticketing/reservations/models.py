@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from .choices import MovieFormat, ReservationStatus
-from .managers import ShowtimeManager
+from .managers import SeatManager, ShowtimeManager
 
 
 class Reservation(BaseModel):
@@ -79,6 +79,8 @@ class Seat(BaseModel):
         help_text=_("Identifier of the seat in the row."),
     )
 
+    objects = SeatManager()
+
     class Meta:
         verbose_name = _("Seat")
         verbose_name_plural = _("Seats")
@@ -89,8 +91,8 @@ class Seat(BaseModel):
         return f"{str(self.hall)} - {self.row_identifier}{self.seat_identifier}"
 
     def is_available_for_showtime(self, showtime):
-        return not ReservationSeat.objects.filter(
-            seat=self, reservation__showtime=showtime
+        return not self.reservation_seats.filter(
+            reservation__showtime=showtime
         ).exists()
 
 
