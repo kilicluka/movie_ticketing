@@ -8,7 +8,7 @@ from .choices import ReservationStatus
 from .models import Hall, Reservation, ReservationSeat, Seat, Showtime
 
 
-class ReservationSerializerBase(serializers.ModelSerializer):
+class ReservationSerializerMixin:
     @staticmethod
     def check_reservations_still_accepted(showtime):
         if (
@@ -21,18 +21,7 @@ class ReservationSerializerBase(serializers.ModelSerializer):
             )
 
     @staticmethod
-    def get_seat_if_available(seat_uuid, showtime):
-        try:
-            seat = Seat.objects.get(uuid=seat_uuid, hall=showtime.hall)
-            if seat.is_available_for_showtime(showtime):
-                return seat
-            raise serializers.ValidationError(
-                {"seat_uuid": "That seat is not available."}
-            )
-        except Seat.DoesNotExist:
-            raise serializers.ValidationError({"seat_uuid": "Invalid seat selected."})
-
-    def to_representation(self, instance):
+    def to_representation(instance):
         return {
             "uuid": str(instance.uuid),
             "showtime": ShowtimesSerializer(instance.showtime).data,
@@ -42,7 +31,7 @@ class ReservationSerializerBase(serializers.ModelSerializer):
         }
 
 
-class ReservationsSerializer(ReservationSerializerBase):
+class ReservationsSerializer(ReservationSerializerMixin, serializers.ModelSerializer):
     seat_uuid = serializers.UUIDField(required=True)
     showtime_uuid = serializers.UUIDField(required=True)
 
@@ -63,10 +52,22 @@ class ReservationsSerializer(ReservationSerializerBase):
     def validate(self, attrs):
         attrs["showtime"] = Showtime.objects.get(uuid=attrs.pop("showtime_uuid"))
         self._check_open_reservation_does_not_exist(attrs["user"], attrs["showtime"])
-        attrs["seat"] = self.get_seat_if_available(
+        attrs["seat"] = self._get_seat_if_available(
             attrs.pop("seat_uuid"), attrs["showtime"]
         )
         return attrs
+
+    @staticmethod
+    def _get_seat_if_available(seat_uuid, showtime):
+        try:
+            seat = Seat.objects.get(uuid=seat_uuid, hall=showtime.hall)
+            if seat.is_available_for_showtime(showtime):
+                return seat
+            raise serializers.ValidationError(
+                {"seat_uuid": "That seat is not available."}
+            )
+        except Seat.DoesNotExist:
+            raise serializers.ValidationError({"seat_uuid": "Invalid seat selected."})
 
     @staticmethod
     def _check_open_reservation_does_not_exist(user, showtime):
@@ -94,7 +95,7 @@ class ReservationsSerializer(ReservationSerializerBase):
         return reservation
 
 
-class ReservationSerializer(ReservationSerializerBase):
+class ReservationSerializer(ReservationSerializerMixin, serializers.ModelSerializer):
     seat_uuids = serializers.ListSerializer(
         child=serializers.UUIDField(), required=True, allow_empty=False
     )
@@ -105,7 +106,7 @@ class ReservationSerializer(ReservationSerializerBase):
 
     def update(self, instance, validated_data):
         self.check_reservations_still_accepted(instance.showtime)
-        self._check_reservation_is_open(instance)
+        self.check_reservation_is_open(instance)
 
         selected_seats = Seat.objects.filter(uuid__in=validated_data["seat_uuids"])
         available_seats = Seat.objects.showtime_seats(instance.showtime).filter(
@@ -118,7 +119,7 @@ class ReservationSerializer(ReservationSerializerBase):
         return instance
 
     @staticmethod
-    def _check_reservation_is_open(reservation):
+    def check_reservation_is_open(reservation):
         if reservation.status == ReservationStatus.COMPLETED:
             raise serializers.ValidationError(
                 {"non_field_error": "Reservation is not OPEN."}
@@ -136,6 +137,15 @@ class ReservationSerializer(ReservationSerializerBase):
         ReservationSeat.objects.filter(reservation=reservation).delete()
         for seat in selected_seats:
             reservation.add_seat(seat)
+
+
+class CompleteReservationSerializer(ReservationSerializerMixin, serializers.Serializer):
+    def update(self, instance, validated_data):
+        self.check_reservations_still_accepted(instance.showtime)
+        ReservationSerializer.check_reservation_is_open(instance)
+        instance.status = ReservationStatus.COMPLETED
+        instance.save(update_fields=["status"])
+        return instance
 
 
 class SeatSerializer(serializers.ModelSerializer):

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from .models import Reservation, Showtime
 from .serializers import (
+    CompleteReservationSerializer,
     ReservationSerializer,
     ReservationsSerializer,
     ShowtimeSerializer,
@@ -11,35 +12,39 @@ from .serializers import (
 )
 
 
-class ReservationsView(generics.ListCreateAPIView):
-    serializer_class = ReservationsSerializer
-    permission_classes = [IsAuthenticated]
-
+class ReservationViewMixin:
     def get_queryset(self):
         return (
             Reservation.objects.filter(user=self.request.user)
             .prefetch_related("seats")
             .select_related("showtime", "showtime__movie")
         )
+
+
+class ReservationsView(ReservationViewMixin, generics.ListCreateAPIView):
+    serializer_class = ReservationsSerializer
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         request.data.update({"user": request.user.pk})
         return super().create(request, *args, **kwargs)
 
 
-class ReservationView(generics.RetrieveUpdateDestroyAPIView):
+class ReservationView(ReservationViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ReservationSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = "uuid"
 
-    def get_queryset(self):
-        return (
-            Reservation.objects.filter(user=self.request.user)
-            .prefetch_related("seats")
-            .select_related("showtime", "showtime__movie")
-        )
-
     def patch(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class CompleteReservationView(ReservationViewMixin, generics.UpdateAPIView):
+    serializer_class = CompleteReservationSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "uuid"
+
+    def put(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
