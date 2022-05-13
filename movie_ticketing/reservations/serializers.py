@@ -5,7 +5,7 @@ from movies.serializers import MovieSerializer
 from rest_framework import serializers
 
 from .choices import ReservationStatus
-from .models import Hall, Reservation, Seat, Showtime
+from .models import Hall, Reservation, ReservationSeat, Seat, Showtime
 
 
 class ReservationSerializerBase(serializers.ModelSerializer):
@@ -95,26 +95,47 @@ class ReservationsSerializer(ReservationSerializerBase):
 
 
 class ReservationSerializer(ReservationSerializerBase):
-    seat_uuid = serializers.UUIDField()
+    seat_uuids = serializers.ListSerializer(
+        child=serializers.UUIDField(), required=True, allow_empty=False
+    )
 
     class Meta:
         model = Reservation
-        fields = ["seat_uuid"]
+        fields = ["seat_uuids"]
 
     def update(self, instance, validated_data):
-        if not validated_data.get("seat_uuid"):
-            raise serializers.ValidationError({"seat_uuid": "This field is required."})
-
         self.check_reservations_still_accepted(instance.showtime)
-        if instance.status == ReservationStatus.COMPLETED:
+        self._check_reservation_is_open(instance)
+
+        selected_seats = Seat.objects.filter(uuid__in=validated_data["seat_uuids"])
+        available_seats = Seat.objects.showtime_seats(instance.showtime).filter(
+            is_available=True
+        )
+        user_seats = Seat.objects.user_showtime_seats(instance.showtime, instance.user)
+        self._check_if_valid_seats_selected(selected_seats, available_seats, user_seats)
+        self._update_reservation_with_new_seats(selected_seats, instance)
+
+        return instance
+
+    @staticmethod
+    def _check_reservation_is_open(reservation):
+        if reservation.status == ReservationStatus.COMPLETED:
             raise serializers.ValidationError(
                 {"non_field_error": "Reservation is not OPEN."}
             )
-        seat = self.get_seat_if_available(
-            validated_data["seat_uuid"], instance.showtime
-        )
-        instance.add_seat(seat)
-        return instance
+
+    @staticmethod
+    def _check_if_valid_seats_selected(selected_seats, available_seats, user_seats):
+        if not set(selected_seats.values_list("pk", flat=True)).issubset(
+            set((available_seats | user_seats).values_list("pk", flat=True))
+        ):
+            raise serializers.ValidationError({"seat_uuids": "Invalid seats selected."})
+
+    @staticmethod
+    def _update_reservation_with_new_seats(selected_seats, reservation):
+        ReservationSeat.objects.filter(reservation=reservation).delete()
+        for seat in selected_seats:
+            reservation.add_seat(seat)
 
 
 class SeatSerializer(serializers.ModelSerializer):

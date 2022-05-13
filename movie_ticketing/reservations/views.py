@@ -1,5 +1,6 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
 from .models import Reservation, Showtime
 from .serializers import (
@@ -39,7 +40,7 @@ class ReservationView(generics.RetrieveUpdateDestroyAPIView):
         )
 
     def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class ShowtimesView(generics.ListAPIView):
